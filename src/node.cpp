@@ -205,8 +205,8 @@ void Node::computeHello()
 
 void Node::computeIntree()
 {
-    // Read the inpute file
-    // Update the intree array
+    // Read the input file
+    // Update the Intree Graph
     string line;
     streampos oldpos;
     while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
@@ -218,25 +218,52 @@ void Node::computeIntree()
             break;
         }
 
-        // TODO
+        // Make the Intree Graph with the help of the Intree message and Incoming neighbors
+        // Create a temporary Intree Graph of the received Intree message
+        int tempIntree[NUMNODES][NUMNODES] = {{0}};
+
+        // Parse the Intree Message
+        // Calculate the total length of the message
+        size_t len = line.length();
+
+        // Find who sent this message
+        char c = line[7];
+        // Let's convert it to int;
+        int rootedAt = c - '0';
+
+        // Calculate the length of body part of the message
+        size_t body;
+        if (len == 8)
+        {
+            // No body to calculate
+            body = 0;
+        }
+        else
+        {
+            // Size of the header plus extra the space, starts from '(' and ends at ')'
+            body = len - 9;
+        }
+
+        cout << "Node " << rootedAt << " Sent Intree with length " << len << " and body " << body << endl;
     }
 }
 
 void Node::processInputFile()
 {
+    // Read the message after 2 second delay, to avoid race condition. The Controller is also delayed by 1 second
     // Counter to check when it is time to expect input
     static size_t timer = 0;
 
-    if (timer != 0)
+    if (timer >= 1)
     {
         // Check for Hello Message
-        if (timer % 32 == 0 || timer == 2)
+        if ((timer-1) % 30 == 0)
         {
             computeHello();
         }
 
         // Check for Intree Message
-        if (timer % 12 == 0 || timer == 2)
+        if ((timer-1) % 10 == 0)
         {
             computeIntree();
         }
@@ -284,6 +311,8 @@ int main(int argc, char *argv[])
 
         // Read the Input file and update the received file if neccessary
         node.processInputFile();
+
+        // Sleep for One second
         sleep(1);
     }
 
