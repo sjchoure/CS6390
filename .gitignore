@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Input/Output/Received/Topology files
+*_received
+input_*
+output_*
+topology
+
+# Scenarios Directory
+/scenario_*
+
+# Bin Directory
+/bin
