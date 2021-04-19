@@ -1,0 +1,19 @@
+clear
+rm -rf bin
+rm -rf scenario_1
+mkdir -p scenario_1
+make
+cd ./scenario_1
+touch topology
+echo -e "0 1\n2 1\n2 0\n3 4\n5 6\n7 8\n8 9" > topology
+../bin/controller.out 20 &
+../bin/node.out 0 20 -1 &
+../bin/node.out 1 20 -1 &
+../bin/node.out 2 20 -1 &
+../bin/node.out 3 20 -1 &
+../bin/node.out 4 20 -1 &
+../bin/node.out 5 20 -1 &
+../bin/node.out 6 20 -1 &
+../bin/node.out 7 20 -1 &
+../bin/node.out 8 20 -1 &
+../bin/node.out 9 20 -1 &
