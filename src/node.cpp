@@ -244,7 +244,12 @@ void Node::computeIntree()
             body = len - 9;
         }
 
-        cout << "Node " << rootedAt << " Sent Intree with length " << len << " and body " << body << endl;
+        //cout << "Node " << rootedAt << " Sent Intree with length " << len << " and body " << body << endl;
+
+        // Update the intree link of the incoming Neighbor
+        intree[ID][rootedAt] = 1;
+
+        
     }
 }
 
