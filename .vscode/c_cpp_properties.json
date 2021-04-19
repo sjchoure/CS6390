@@ -1,0 +1,21 @@
+{
+    "env": {
+      "myCompilerPath": "/usr/local/bin/g++"
+    },
+    "configurations": [
+      {
+        "name": "Linux",
+        "intelliSenseMode": "linux-gcc-x64",
+        "includePath": ["/usr/include/c++/4.8.2"],
+        "compilerPath": "/usr/bin/g++",
+        "cStandard": "c11",
+        "cppStandard": "c++11",
+        "browse": {
+          "path": ["${workspaceFolder}"],
+          "limitSymbolsToIncludedHeaders": true,
+          "databaseFilename": ""
+        }
+      }
+    ],
+    "version": 4
+}
