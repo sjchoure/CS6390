@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define NUMNODES 10
+
 struct FileDescriptor
 {
     // Store the name of the Files
@@ -29,14 +31,28 @@ struct Routing
     string dataMessage;
 
     // Keep track of Incoming Neighbors
-    int incomingNeighbors[10] = {0};
+    int incomingNeighbors[NUMNODES] = {0};
 
     // Keep track of Outgoing Neighbors
-    int outgoingNeighbors[10] = {0};
+    int outgoingNeighbors[NUMNODES] = {0};
 
     // In-tree of a Node
-    int intree[10][10] = {{0}};
+    int intree[NUMNODES][NUMNODES] = {{0}};
+
+    // Check if incoming Neighbors is empty
+    bool isINempty();
 };
+
+bool Routing::isINempty()
+{
+    for(size_t i = 0; i < NUMNODES; i++)
+    {
+        if(incomingNeighbors[i])
+            return false;
+    }
+
+    return true;
+}
 
 class Node
 {
@@ -56,6 +72,9 @@ public:
     // Hello Message Sender
     void helloProtocol();
 
+    // Intree Protocol
+    void intreeProtocol();
+
     // Process Input File
     void processInputFile();
 
@@ -74,6 +93,9 @@ private:
 
     // Compute the Hello Messages
     void computeHello();
+
+    // Compute the intree Messages
+    void computeIntree();
 };
 
 Node::~Node()
@@ -134,6 +156,22 @@ void Node::helloProtocol()
     channel.output.flush();
 }
 
+void Node::intreeProtocol()
+{
+    // Check the status of incoming Neighbors
+    if(msg.isINempty())
+    {
+        channel.output << "Intree " << ID << endl;
+        channel.output.flush();
+        return;
+    }
+    
+    // Create a buffer for the message to send
+    string buffer = "Intree " + to_string(ID) + " Something too";
+    channel.output << buffer << endl;
+    channel.output.flush();
+}
+
 void Node::computeHello()
 {
     // Refresh the Incoming Neighbors
@@ -142,13 +180,44 @@ void Node::computeHello()
     // Read the Input file to check for the message
     // and then update the incoming neighbors
     string line;
-    while ((line = readFile(channel.input)) != "")
+    streampos oldpos;
+    while (oldpos = channel.input.tellg() ,(line = readFile(channel.input)) != "")
     {
+        if(line[0] != 'H')
+        {
+            channel.input.seekg(oldpos);
+            break;
+        }
+
         //Store the node number in char form
         char c = line[6];
 
         // Update the Incoming Neighbors
         msg.incomingNeighbors[c-'0'] = 1;
+    }
+
+    cout << "Node " << ID << endl;
+    for(size_t i = 0; i < NUMNODES; i++)
+        cout << msg.incomingNeighbors[i] << " ";
+    cout << endl;
+    
+}
+
+void Node::computeIntree()
+{
+    // Read the inpute file
+    // Update the intree array
+    string line;
+    streampos oldpos;
+    while (oldpos = channel.input.tellg() ,(line = readFile(channel.input)) != "")
+    {
+        if(line[0] != 'I')
+        {
+            channel.input.seekg(oldpos);
+            break;
+        }
+
+        // TODO
     }
 }
 
@@ -163,6 +232,12 @@ void Node::processInputFile()
         if (timer % 32 == 0 || timer == 2)
         {
             computeHello();
+        }
+
+        // Check for Intree Message
+        if (timer % 12 == 0 || timer == 2)
+        {
+            computeIntree();
         }
     }
     timer++;
@@ -200,7 +275,8 @@ int main(int argc, char *argv[])
             node.helloProtocol();
 
         // Send In tree message every 10 seconds
-        //if (i % 10)
+        if (i % 10 == 0)
+           node.intreeProtocol();
 
         // Send Data message every 15 seconds
         //if (i % 15)

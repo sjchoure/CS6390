@@ -79,7 +79,7 @@ public:
     size_t duration;
 
     //Hello Protocol
-    void helloProtocol();
+    void sendToNeighbors();
 
 private:
     // Channels of Controller
@@ -159,7 +159,7 @@ string Controller::readFile(fstream& fd)
     return line;
 }
 
-void Controller::helloProtocol()
+void Controller::sendToNeighbors()
 {
     // Search through the topology links to find the neighbors
     for(size_t i = 0;i < nodes.numNodes;i++)
@@ -209,7 +209,10 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < controller.duration; i++)
     {
         if (i % 30 == 0)
-            controller.helloProtocol();
+            controller.sendToNeighbors();
+        if (i % 10 == 0)
+            controller.sendToNeighbors();
+
 
         sleep(1);
     }
