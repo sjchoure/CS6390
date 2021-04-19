@@ -45,9 +45,9 @@ struct Routing
 
 bool Routing::isINempty()
 {
-    for(size_t i = 0; i < NUMNODES; i++)
+    for (size_t i = 0; i < NUMNODES; i++)
     {
-        if(incomingNeighbors[i])
+        if (incomingNeighbors[i])
             return false;
     }
 
@@ -159,13 +159,13 @@ void Node::helloProtocol()
 void Node::intreeProtocol()
 {
     // Check the status of incoming Neighbors
-    if(msg.isINempty())
+    if (msg.isINempty())
     {
         channel.output << "Intree " << ID << endl;
         channel.output.flush();
         return;
     }
-    
+
     // Create a buffer for the message to send
     string buffer = "Intree " + to_string(ID) + " Something too";
     channel.output << buffer << endl;
@@ -175,15 +175,16 @@ void Node::intreeProtocol()
 void Node::computeHello()
 {
     // Refresh the Incoming Neighbors
-    fill(msg.incomingNeighbors,msg.incomingNeighbors+10,0);
+    fill(msg.incomingNeighbors, msg.incomingNeighbors + 10, 0);
 
     // Read the Input file to check for the message
     // and then update the incoming neighbors
     string line;
     streampos oldpos;
-    while (oldpos = channel.input.tellg() ,(line = readFile(channel.input)) != "")
+    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
     {
-        if(line[0] != 'H')
+        // Check if the line read is a Hello Message or not, if not then put the line back to the file and break.
+        if (line[0] != 'H')
         {
             channel.input.seekg(oldpos);
             break;
@@ -193,14 +194,13 @@ void Node::computeHello()
         char c = line[6];
 
         // Update the Incoming Neighbors
-        msg.incomingNeighbors[c-'0'] = 1;
+        msg.incomingNeighbors[c - '0'] = 1;
     }
 
     cout << "Node " << ID << endl;
-    for(size_t i = 0; i < NUMNODES; i++)
+    for (size_t i = 0; i < NUMNODES; i++)
         cout << msg.incomingNeighbors[i] << " ";
     cout << endl;
-    
 }
 
 void Node::computeIntree()
@@ -209,9 +209,10 @@ void Node::computeIntree()
     // Update the intree array
     string line;
     streampos oldpos;
-    while (oldpos = channel.input.tellg() ,(line = readFile(channel.input)) != "")
+    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
     {
-        if(line[0] != 'I')
+        // Check if the line read is an Intree Message or not, if not then put the line back to the file and break.
+        if (line[0] != 'I')
         {
             channel.input.seekg(oldpos);
             break;
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
 
         // Send In tree message every 10 seconds
         if (i % 10 == 0)
-           node.intreeProtocol();
+            node.intreeProtocol();
 
         // Send Data message every 15 seconds
         //if (i % 15)

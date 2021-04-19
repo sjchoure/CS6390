@@ -52,12 +52,12 @@ void NodeRecord::createChannels()
         channels[i].input.open(channels[i].inputFileName.c_str(), ios::in);
         channels[i].output.open(channels[i].outputFileName.c_str(), ios::out | ios::app);
 
-        if(channels[i].input.fail())
+        if (channels[i].input.fail())
         {
             cout << "Controller: Node " << i << " No input file" << endl;
             exit(1);
         }
-        if(channels[i].output.fail())
+        if (channels[i].output.fail())
         {
             cout << "Controller: Node " << i << " No output file" << endl;
             exit(1);
@@ -98,7 +98,7 @@ private:
     void parseString(string);
 
     // Read File
-    string readFile(fstream&);
+    string readFile(fstream &);
 };
 
 void Controller::parseString(string line) //Waring: Single Sequencial Digit Parser only!!
@@ -146,7 +146,7 @@ void Controller::setChannel()
     }
 }
 
-string Controller::readFile(fstream& fd)
+string Controller::readFile(fstream &fd)
 {
     string line = "";
     getline(fd, line);
@@ -162,19 +162,19 @@ string Controller::readFile(fstream& fd)
 void Controller::sendToNeighbors()
 {
     // Search through the topology links to find the neighbors
-    for(size_t i = 0;i < nodes.numNodes;i++)
+    for (size_t i = 0; i < nodes.numNodes; i++)
     {
         // Read the output file of the node for the hello message
         string line = readFile(nodes.channels[i].input);
 
         // If the read is empty don't transmit
-        if(line != "")
+        if (line != "")
         {
             // Go through all the links of that particular nodes
-            for(size_t j = 0; j< nodes.numNodes; j++)
+            for (size_t j = 0; j < nodes.numNodes; j++)
             {
                 // If the link exist then put the message of that nodes input file
-                if(nodes.topologyLinks[i][j])
+                if (nodes.topologyLinks[i][j])
                 {
                     nodes.channels[j].output << line << endl;
                     nodes.channels[j].output.flush();
@@ -212,7 +212,6 @@ int main(int argc, char *argv[])
             controller.sendToNeighbors();
         if (i % 10 == 0)
             controller.sendToNeighbors();
-
 
         sleep(1);
     }
