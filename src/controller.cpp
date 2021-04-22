@@ -1,3 +1,13 @@
+/*  
+ *  Simulates a fictional component inside a network
+ *  to enable forwarding of data packets from one node to other node.
+ *  Copyright (C) 2021 Sourabh J Choure
+ * 
+ *  I promise that the work presented below is my own.
+ * 
+ *  To make it FOSS Compliant, this software is free to use.
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -70,8 +80,8 @@ class Controller
 public:
     Controller(size_t duration) : duration(duration)
     {
-        setChannel();
-        createNodeChannels();
+        setChannel(); // topology
+        createNodeChannels(); // Node channels
     };
     ~Controller(){};
 
@@ -155,7 +165,7 @@ string Controller::readFile(fstream &fd)
         fd.clear();
         line = "";
     }
-    //cout << "Bad:" << channel.input.bad() << " EOF:" << channel.input.eof() << " Fail:" << channel.input.fail() << " GOOD:"<< channel.input.good();
+    
     return line;
 }
 
@@ -177,7 +187,7 @@ void Controller::sendToNeighbors()
                 if (nodes.topologyLinks[i][j])
                 {
                     nodes.channels[j].output << line << endl;
-                    nodes.channels[j].output.flush();
+                    nodes.channels[j].output.flush(); //force
                 }
             }
         }
@@ -208,9 +218,9 @@ int main(int argc, char *argv[])
     // Start the algo
     for (size_t i = 0; i < controller.duration; i++)
     {
-        if (i % 30 == 0)
+        if (i % 30 == 0) 
             controller.sendToNeighbors();
-        if (i % 10 == 0)
+        if (i % 10 == 0) 
             controller.sendToNeighbors();
 
         sleep(1);

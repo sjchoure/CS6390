@@ -1,3 +1,13 @@
+/*  
+ *  Simulates an actual node inside a network with capabilities to 
+ *  send and receive data packets via files.
+ *  Copyright (C) 2021 Sourabh J Choure
+ * 
+ *  I promise that the work presented below is my own.
+ * 
+ *  To make it FOSS Compliant, this software is free to use.
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -21,9 +31,81 @@ struct FileDescriptor
     ofstream receivedData;
 };
 
+struct Queue
+{
+    // Constructor of the Queue
+    Queue(int cap) : cap(cap), f(0), r(0), n(0), p(new int[cap]){};
+
+    // Pointer to array
+    int *p;
+
+    // Index to the front of the Queue
+    int f;
+
+    // Index to the rear of the Queue
+    int r;
+
+    // Total Number of elements in the Queue
+    int n;
+
+    // Store the total capacity of the Queue
+    int cap;
+
+    // Put the elements in the Queue
+    void enqueue(int);
+
+    // Remove the elements from the Queue
+    int dequeue();
+
+    // Check if the Queue is empty
+    bool empty();
+};
+
+void Queue::enqueue(int val)
+{
+    if(n==cap)
+    {
+        // Queue is Full
+    }
+
+    // Put the val
+    p[r] = val;
+
+    // Increment the rear index
+    r = (r+1)%cap;
+
+    // Increment the total number of elements
+    n++;
+}
+
+int Queue::dequeue()
+{
+    if(n==0)
+    {
+       // Queue is Empty
+    }
+
+    // Remove the element
+    int tmp = p[f];
+
+    // Increment the front index
+    f = (f+1)%cap;
+
+    // Decrement the number of elements
+    n--;
+
+    // Return the element
+    return tmp;
+}
+
+bool Queue::empty()
+{
+    return (n==0) ? true: false;
+}
 struct Routing
 {
     Routing(int dest, string dataMessage) : dest(dest), dataMessage(dataMessage){};
+
     // Destination Node
     int dest;
 
@@ -41,6 +123,9 @@ struct Routing
 
     // Check if incoming Neighbors is empty
     bool isINempty();
+
+    // BFS Traversal for the graph
+    void BFS(size_t, size_t, int (&)[NUMNODES][NUMNODES]);
 };
 
 bool Routing::isINempty()
@@ -52,6 +137,47 @@ bool Routing::isINempty()
     }
 
     return true;
+}
+
+void Routing::BFS(size_t ID, size_t rootedAt, int (&tempIntree)[NUMNODES][NUMNODES])
+{
+    // Queues for both the tree
+    Queue qCurNode(10);
+    Queue qTmpNode(10);
+
+    // Visited array for both the trees
+    bool visCur[10] = {false};
+    bool visTmp[10] = {false};
+
+    // Mark both the nodes of tree as visited
+    visCur[ID] = true;
+    visTmp[rootedAt] = true;
+
+    // Put them in Queue
+    qCurNode.enqueue(ID);
+    qTmpNode.enqueue(rootedAt);
+
+    // Iterate over both the trees
+    while(!qCurNode.empty() || !qTmpNode.empty())
+    {
+        // Mark all the nodes as unvisited at the start
+        int levelCur[10] = {0};
+        int levelTmp[10] = {0};
+
+        // Check if a Current Node Queue is empty
+        if(!qCurNode.empty())
+        {
+            // Remove the element from the 
+            int v = qCurNode.dequeue();
+
+            // Scan through all the nodes in the graph
+            for(int w = 0; w < NUMNODES; w++)
+            {
+                
+            }
+
+        }
+    }
 }
 
 class Node
@@ -167,7 +293,7 @@ void Node::intreeProtocol()
     }
 
     // Create a buffer for the message to send
-    string buffer = "Intree " + to_string(ID) + " Something too";
+    string buffer = "Intree " + to_string(ID) + " (0 1)(2 3)(3 4)";
     channel.output << buffer << endl;
     channel.output.flush();
 }
@@ -219,9 +345,6 @@ void Node::computeIntree()
         }
 
         // Make the Intree Graph with the help of the Intree message and Incoming neighbors
-        // Create a temporary Intree Graph of the received Intree message
-        int tempIntree[NUMNODES][NUMNODES] = {{0}};
-
         // Parse the Intree Message
         // Calculate the total length of the message
         size_t len = line.length();
@@ -246,10 +369,24 @@ void Node::computeIntree()
 
         //cout << "Node " << rootedAt << " Sent Intree with length " << len << " and body " << body << endl;
 
-        // Update the intree link of the incoming Neighbor
-        intree[ID][rootedAt] = 1;
+        // Create a temporary Intree Graph of the received Intree message
+        int tempIntree[NUMNODES][NUMNODES] = {{0}};
 
-        
+        // Extract the node numbers from the message
+        for (size_t i = 0; i < body; i += 5)
+        {
+            char r = line[10 + i];
+            char c = line[10 + i + 2];
+
+            // Place a directed edge here
+            tempIntree[r - '0'][c - '0'] = 1;
+        }
+
+        // Update the intree link of the incoming Neighbor
+        msg.intree[ID][rootedAt] = 1;
+
+        // Merge the two trees
+        msg.BFS(ID, rootedAt, tempIntree);
     }
 }
 
@@ -262,13 +399,13 @@ void Node::processInputFile()
     if (timer >= 1)
     {
         // Check for Hello Message
-        if ((timer-1) % 30 == 0)
+        if ((timer - 1) % 30 == 0)
         {
             computeHello();
         }
 
         // Check for Intree Message
-        if ((timer-1) % 10 == 0)
+        if ((timer - 1) % 10 == 0)
         {
             computeIntree();
         }

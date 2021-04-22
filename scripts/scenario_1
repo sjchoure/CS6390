@@ -1,4 +1,5 @@
 clear
+echo -e "\nThis software is written for Academic Purposes only and comes with ABSOLUTELY NO WARRANTY\n"
 rm -rf bin
 rm -rf scenario_1
 mkdir -p scenario_1
