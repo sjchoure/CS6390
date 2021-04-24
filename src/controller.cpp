@@ -3,7 +3,7 @@
  *  to enable forwarding of data packets from one node to other node.
  *  Copyright (C) 2021 Sourabh J Choure
  * 
- *  I promise that the work presented below is my own.
+ *  I promise that the work presented below is of my own.
  * 
  *  To make it FOSS Compliant, this software is free to use.
  */

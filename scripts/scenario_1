@@ -6,15 +6,10 @@ mkdir -p scenario_1
 make
 cd ./scenario_1
 touch topology
-echo -e "0 1\n2 1\n2 0\n3 4\n5 6\n7 8\n8 9" > topology
-../bin/controller.out 100 &
-../bin/node.out 0 100 -1 &
-../bin/node.out 1 100 -1 &
-../bin/node.out 2 100 -1 &
-../bin/node.out 3 100 -1 &
-../bin/node.out 4 100 -1 &
-../bin/node.out 5 100 -1 &
-../bin/node.out 6 100 -1 &
-../bin/node.out 7 100 -1 &
-../bin/node.out 8 100 -1 &
-../bin/node.out 9 100 -1 &
+echo -e "0 1\n0 4\n1 2\n2 3\n3 0\n4 3" > topology
+../bin/controller.out 80 &
+../bin/node.out 0 80 -1 &
+../bin/node.out 1 80 -1 &
+../bin/node.out 2 80 -1 &
+../bin/node.out 3 80 -1 &
+../bin/node.out 4 80 -1 &
