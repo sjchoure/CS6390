@@ -265,7 +265,7 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     // Merge the levels
     for (int hop = 1; hop < NUMNODES; hop++)
     {
-        int count = 10;
+        int count = NUMNODES;
         while (count--)
         {
             int cmpLvl = -1;
@@ -336,6 +336,8 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
                                 {
                                     visRmv[w] = 1;
                                     tmpIntree[w][v] = 0;
+                                    levelTmp[w].level = -1;
+                                    levelTmp[w].dest = -1;
                                     qTmpRmv.enqueue(w);
                                 }
                             }
@@ -389,14 +391,17 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
                                 {
                                     visRmv[w] = 1;
                                     intree[w][v] = 0;
+                                    levelCur[w].level = -1;
+                                    levelCur[w].dest = -1;
                                     qTmpRmv.enqueue(w);
                                 }
                             }
                         }
                     }
                 }
-                levelCur[cmpTmp].level = -1;
-                levelCur[cmpTmp].dest = -1;
+
+                levelTmp[cmpTmp].level = -1;
+                levelTmp[cmpTmp].dest = -1;
             }
 
             else if (cmpLvl != -1 && cmpTmp != -1 && cmpLvl == cmpTmp)
@@ -408,8 +413,8 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
                 levelCur[cmpLvl].level = -1;
                 levelCur[cmpLvl].dest = -1;
 
-                levelTmp[cmpLvl].level = -1;
-                levelTmp[cmpLvl].dest = -1;
+                levelTmp[cmpTmp].level = -1;
+                levelTmp[cmpTmp].dest = -1;
             }
         }
     }
