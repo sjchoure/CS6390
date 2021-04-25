@@ -224,6 +224,8 @@ int main(int argc, char *argv[])
             controller.sendToNeighbors();
         if (i % 10 == 0) 
             controller.sendToNeighbors();
+        if (i % 15 == 0) 
+            controller.sendToNeighbors();
 
         sleep(1);
     }

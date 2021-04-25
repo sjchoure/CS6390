@@ -122,6 +122,9 @@ struct Routing
     // Buffer for the data to be sent
     string dataMessage;
 
+    // Buffer for passing message to Neighbor
+    string passDataToNeighbor[NUMNODES] = {""};
+
     // Keep track of Incoming Neighbors
     int incomingNeighbors[NUMNODES] = {0};
 
@@ -374,7 +377,6 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
 
                 levelTmp[cmpLvl].level = -1;
                 levelTmp[cmpLvl].dest = -1;
-                
             }
 
             else if ((cmpLvl == -1 && cmpTmp != -1) || (cmpLvl != -1 && cmpTmp != -1 && cmpLvl > cmpTmp))
@@ -454,7 +456,6 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     for (size_t i = 0; i < NUMNODES; i++)
         for (size_t j = 0; j < NUMNODES; j++)
             intree[i][j] = mergeTree[i][j];
-
 }
 
 class Node
@@ -498,13 +499,16 @@ private:
     string readFile(fstream &);
 
     // Return the path to the destination
-    string findPathToDest(int);
+    void findPathToDest(int, string &);
 
     // Compute the Hello Messages
     void computeHello();
 
     // Compute the intree Messages
     void computeIntree();
+
+    // Compute the Data Messages
+    void computeData();
 };
 
 Node::~Node()
@@ -616,31 +620,39 @@ void Node::intreeProtocol()
     channel.output.flush();
 }
 
-string Node::findPathToDest(int v)
+void Node::findPathToDest(int v, string &path)
 {
     // Store the path
-    msg.pathToDest = msg.pathToDest + to_string(v) + " ";
+    path = path + to_string(v) + " ";
 
     for (size_t w = 0; w < NUMNODES; w++)
     {
         if (msg.intree[v][w])
         {
-            return findPathToDest(w);
+            findPathToDest(w, path);
         }
     }
-
-    return msg.pathToDest;
 }
 
 void Node::dataProtocol()
 {
+    for(size_t i = 0; i < NUMNODES; i++)
+    {
+        if(msg.passDataToNeighbor[i] != "")
+        {
+            channel.output << msg.passDataToNeighbor[i] << endl;
+            channel.output.flush();
+            msg.passDataToNeighbor[i] = "";
+        }
+    }
+    
     if (msg.dest != -1)
     {
         // Clear the old path
         msg.pathToDest = "";
 
         // Find the new path
-        findPathToDest(msg.dest);
+        findPathToDest(msg.dest, msg.pathToDest);
 
         // Check if string was empty or not
         string tempCheck = to_string(msg.dest) + " ";
@@ -653,7 +665,18 @@ void Node::dataProtocol()
         }
 
         // Debug
-        cout << msg.pathToDest << " and " << msg.dataMessage << endl;
+        // cout << msg.pathToDest << " and " << msg.dataMessage << endl;
+
+        // Find the Incoming Neighbor
+        size_t len = msg.pathToDest.length();
+        char in = msg.pathToDest[len - 4];
+
+        if (msg.pathToIncomingNeighbors[in - '0'] == "")
+            return;
+
+        // Send the data to the Incoming Neighbor
+        channel.output << "Data " << ID << " " << msg.dest << " " << msg.pathToIncomingNeighbors[in - '0'].erase(0, 2) << "begin " << msg.dataMessage << endl;
+        channel.output.flush();
     }
 }
 
@@ -824,6 +847,84 @@ void Node::computeIntree()
     // }
 }
 
+void Node::computeData()
+{
+    // Parse the input file
+    string line;
+    streampos oldpos;
+    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
+    {
+        // Check if the line read is a Data Message or not, if not then put the line back to the file and break.
+        if (line[0] != 'D')
+        {
+            channel.input.seekg(oldpos);
+            break;
+        }
+
+        // Extract the Intermediate node
+        char dataInterDest = line[9];
+
+        // Check if it is destined to me
+        if (unsigned(dataInterDest - '0') != ID)
+            continue;
+
+        // Extract the Destination Node
+        char dataDest = line[7];
+
+        // Extract the Source Node
+        char dataSrc = line[5];
+
+        if (unsigned(dataDest - '0') == ID)
+        {
+            // Extract the data Message
+            string message = line.erase(0, 17);
+
+            // Add the data to the received file
+            channel.receivedData << "Message from " << dataSrc << " to " << dataDest << " : " << message << endl;
+        }
+        else
+        {
+            if (line[11] == 'b')
+            {
+                // Extract the data Message
+                string message = line.erase(0, 17);
+
+                //Pass to Neighbor
+                string intermediateNode = "";
+
+                // Find the new path
+                findPathToDest((dataDest - '0'), intermediateNode);
+                cout << "Node " << ID << " Path " << intermediateNode << endl;
+                // Check if string was empty or not
+                string tempCheck = dataDest + " ";
+                if (intermediateNode == tempCheck)
+                {
+                    intermediateNode = "";
+
+                    continue;
+                }
+
+                // Find the Incoming Neighbor
+                size_t len = intermediateNode.length();
+                char in = intermediateNode[len - 4];
+
+                if (msg.pathToIncomingNeighbors[in - '0'] == "")
+                    continue;
+                cout << "Node " << ID << " IN " << msg.pathToIncomingNeighbors[in - '0'] << endl;
+                msg.passDataToNeighbor[dataSrc - '0'] = "Data " + to_string((dataSrc-'0')) + " " + to_string((dataDest - '0')) + " " + msg.pathToIncomingNeighbors[in - '0'].erase(0,2) + "begin " + message;
+                
+            }
+            else
+            {
+                // Remove myself from the intermediate nodes
+                line.erase(line.begin()+9);
+                line.erase(line.begin()+9);
+                msg.passDataToNeighbor[dataSrc - '0'] = line;
+            }
+        }
+    }
+}
+
 void Node::processInputFile()
 {
     // Read the message after 2 second delay, to avoid race condition. The Controller is also delayed by 1 second
@@ -842,6 +943,11 @@ void Node::processInputFile()
         if ((timer - 1) % 10 == 0)
         {
             computeIntree();
+        }
+
+        if ((timer - 1) % 15 == 0)
+        {
+            computeData();
         }
     }
     timer++;
