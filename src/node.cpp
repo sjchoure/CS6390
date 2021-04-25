@@ -116,6 +116,9 @@ struct Routing
     // Destination Node
     int dest;
 
+    // Path to Destination
+    string pathToDest = "";
+
     // Buffer for the data to be sent
     string dataMessage;
 
@@ -128,8 +131,14 @@ struct Routing
     // In-tree of a Node
     int intree[NUMNODES][NUMNODES] = {{0}};
 
+    // Store the path to the neighbor
+    string pathToIncomingNeighbors[NUMNODES] = {""};
+
     // Check if incoming Neighbors is empty
     bool isINempty();
+
+    // Find the path to the Incoming Neighbor
+    void storePathToIncomingNeighbor(size_t, size_t, int (&)[NUMNODES][NUMNODES]);
 
     // BFS Traversal for the graph
     void BFS(size_t, size_t, int (&)[NUMNODES][NUMNODES]);
@@ -146,14 +155,29 @@ bool Routing::isINempty()
     return true;
 }
 
+void Routing::storePathToIncomingNeighbor(size_t v, size_t rootedAt, int (&tempIntree)[NUMNODES][NUMNODES])
+{
+    // Add Node v to the path
+    pathToIncomingNeighbors[rootedAt] = pathToIncomingNeighbors[rootedAt] + to_string(v) + " ";
+
+    // Traverse the Graph
+    for (size_t w = 0; w < NUMNODES; w++)
+    {
+        if (tempIntree[v][w])
+        {
+            storePathToIncomingNeighbor(w, rootedAt, tempIntree);
+        }
+    }
+}
+
 void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODES])
 {
     {
         // Queue to remove
-        Queue qTmpRmv(10);
+        Queue qTmpRmv(NUMNODES);
 
         // Visited for remove
-        bool visRmv[10] = {false};
+        bool visRmv[NUMNODES] = {false};
 
         // Modify the intree of the incoming neighbor
         tmpIntree[ID][rootedAt] = 0;
@@ -189,16 +213,16 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     tmpIntree[rootedAt][ID] = 1;
 
     // Queues for both the tree
-    Queue qCurNode(10);
-    Queue qTmpNode(10);
+    Queue qCurNode(NUMNODES);
+    Queue qTmpNode(NUMNODES);
 
     // Visited array for both the trees
-    bool visCur[10] = {false};
-    bool visTmp[10] = {false};
+    bool visCur[NUMNODES] = {false};
+    bool visTmp[NUMNODES] = {false};
 
     // Mark all the nodes as unvisited at the start
-    nodeLevel levelCur[10];
-    nodeLevel levelTmp[10];
+    nodeLevel levelCur[NUMNODES];
+    nodeLevel levelTmp[NUMNODES];
 
     // Mark both the nodes of tree as visited
     visCur[ID] = true;
@@ -214,14 +238,14 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     levelTmp[ID].level = 0;
     levelTmp[ID].dest = -1;
 
-    cout << "Intree Node " << ID << endl;
+    //cout << "Intree Node " << ID << endl;
 
     // Check if a Current Node Queue is empty
     while (!qCurNode.empty())
     {
         // Remove the element from the Queue
         int v = qCurNode.dequeue();
-        cout << " \tCurNode: " << v << " Level: " << levelCur[v].level << endl;
+        //cout << " \tCurNode: " << v << " Level: " << levelCur[v].level << endl;
         // Scan through all the nodes in the graph
         for (int w = 0; w < NUMNODES; w++)
         {
@@ -243,7 +267,7 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     {
         // Remove the element from the Queue
         int v = qTmpNode.dequeue();
-        cout << " \tTmpNode: " << v << " Level: " << levelTmp[v].level << endl;
+        //cout << " \tTmpNode: " << v << " Level: " << levelTmp[v].level << endl;
         // Scan through all the nodes in the graph
         for (int w = 0; w < NUMNODES; w++)
         {
@@ -307,10 +331,10 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
                     mergeTree[cmpLvl][dest] = 1;
 
                     // Queue to remove
-                    Queue qTmpRmv(10);
+                    Queue qTmpRmv(NUMNODES);
 
                     // Visited for remove
-                    bool visRmv[10] = {false};
+                    bool visRmv[NUMNODES] = {false};
 
                     // Modify the intree of the incoming neighbor
                     tmpIntree[cmpLvl][levelTmp[cmpLvl].dest] = 0;
@@ -347,6 +371,10 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
 
                 levelCur[cmpLvl].level = -1;
                 levelCur[cmpLvl].dest = -1;
+
+                levelTmp[cmpLvl].level = -1;
+                levelTmp[cmpLvl].dest = -1;
+                
             }
 
             else if ((cmpLvl == -1 && cmpTmp != -1) || (cmpLvl != -1 && cmpTmp != -1 && cmpLvl > cmpTmp))
@@ -362,10 +390,10 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
                     mergeTree[cmpTmp][dest] = 1;
 
                     // Queue to remove
-                    Queue qTmpRmv(10);
+                    Queue qTmpRmv(NUMNODES);
 
                     // Visited for remove
-                    bool visRmv[10] = {false};
+                    bool visRmv[NUMNODES] = {false};
 
                     // Modify the intree of the incoming neighbor
                     intree[cmpTmp][levelCur[cmpTmp].dest] = 0;
@@ -402,6 +430,9 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
 
                 levelTmp[cmpTmp].level = -1;
                 levelTmp[cmpTmp].dest = -1;
+
+                levelCur[cmpTmp].level = -1;
+                levelCur[cmpTmp].dest = -1;
             }
 
             else if (cmpLvl != -1 && cmpTmp != -1 && cmpLvl == cmpTmp)
@@ -420,9 +451,10 @@ void Routing::BFS(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODE
     }
 
     // copy to intree
-    for(size_t i = 0; i < NUMNODES; i++)
-        for(size_t j = 0; j < NUMNODES; j++)
+    for (size_t i = 0; i < NUMNODES; i++)
+        for (size_t j = 0; j < NUMNODES; j++)
             intree[i][j] = mergeTree[i][j];
+
 }
 
 class Node
@@ -446,6 +478,9 @@ public:
     // Intree Protocol
     void intreeProtocol();
 
+    // Data Protocol
+    void dataProtocol();
+
     // Process Input File
     void processInputFile();
 
@@ -461,6 +496,9 @@ private:
 
     // read the file contents line by line
     string readFile(fstream &);
+
+    // Return the path to the destination
+    string findPathToDest(int);
 
     // Compute the Hello Messages
     void computeHello();
@@ -541,10 +579,10 @@ void Node::intreeProtocol()
     string buffer = "Intree " + to_string(ID) + " ";
 
     // Traverse the Intree
-    Queue qCurNode(10);
+    Queue qCurNode(NUMNODES);
 
     // Visit Node
-    bool visCur[10] = {false};
+    bool visCur[NUMNODES] = {false};
 
     // Enqueue the Node
     qCurNode.enqueue(ID);
@@ -557,7 +595,7 @@ void Node::intreeProtocol()
     {
         // Remove the element from the Queue
         int v = qCurNode.dequeue();
-        
+
         // Scan through all the nodes in the graph
         for (int w = 0; w < NUMNODES; w++)
         {
@@ -578,10 +616,51 @@ void Node::intreeProtocol()
     channel.output.flush();
 }
 
+string Node::findPathToDest(int v)
+{
+    // Store the path
+    msg.pathToDest = msg.pathToDest + to_string(v) + " ";
+
+    for (size_t w = 0; w < NUMNODES; w++)
+    {
+        if (msg.intree[v][w])
+        {
+            return findPathToDest(w);
+        }
+    }
+
+    return msg.pathToDest;
+}
+
+void Node::dataProtocol()
+{
+    if (msg.dest != -1)
+    {
+        // Clear the old path
+        msg.pathToDest = "";
+
+        // Find the new path
+        findPathToDest(msg.dest);
+
+        // Check if string was empty or not
+        string tempCheck = to_string(msg.dest) + " ";
+        if (msg.pathToDest == tempCheck)
+        {
+            msg.pathToDest = "";
+
+            //exit
+            return;
+        }
+
+        // Debug
+        cout << msg.pathToDest << " and " << msg.dataMessage << endl;
+    }
+}
+
 void Node::computeHello()
 {
     // Refresh the Incoming Neighbors
-    fill(msg.incomingNeighbors, msg.incomingNeighbors + 10, 0);
+    fill(msg.incomingNeighbors, msg.incomingNeighbors + NUMNODES, 0);
 
     // Read the Input file to check for the message
     // and then update the incoming neighbors
@@ -603,15 +682,18 @@ void Node::computeHello()
         msg.incomingNeighbors[c - '0'] = 1;
     }
 
-    cout << "Hello Node " << ID << endl;
-    cout << "\t";
-    for (size_t i = 0; i < NUMNODES; i++)
-        cout << msg.incomingNeighbors[i] << " ";
-    cout << endl;
+    // cout << "Hello Node " << ID << endl;
+    // cout << "\t";
+    // for (size_t i = 0; i < NUMNODES; i++)
+    //     cout << msg.incomingNeighbors[i] << " ";
+    // cout << endl;
 }
 
 void Node::computeIntree()
 {
+    // Keep record of who sent the intree message
+    bool gotIntree[NUMNODES] = {0};
+
     // Read the input file
     // Update the Intree Graph
     string line;
@@ -634,6 +716,8 @@ void Node::computeIntree()
         char c = line[7];
         // Let's convert it to int;
         int rootedAt = c - '0';
+        // Store in the who sent Intree
+        gotIntree[rootedAt] = true;
 
         // Calculate the length of body part of the message
         size_t body;
@@ -663,12 +747,81 @@ void Node::computeIntree()
             tempIntree[r - '0'][c - '0'] = 1;
         }
 
-        // Update the intree link of the incoming Neighbor
-        // msg.intree[ID][rootedAt] = 1;
+        //Refresh the Contents in Path To Incoming Neighbor
+        msg.pathToIncomingNeighbors[rootedAt] = "";
+        // Find the path to the Incoming Neighbor
+        msg.storePathToIncomingNeighbor(ID, rootedAt, tempIntree);
+        // Check if string was empty or not
+        string tempCheck = to_string(ID) + " ";
+        if (msg.pathToIncomingNeighbors[rootedAt] == tempCheck)
+            msg.pathToIncomingNeighbors[rootedAt] = "";
+
+        // Debug
+        //cout << "Node " << ID << " Path: " << msg.pathToIncomingNeighbors[rootedAt] << endl;
 
         // Merge the two trees
         msg.BFS(ID, rootedAt, tempIntree);
     }
+
+    // Keep with the neighbors who sen the Intree
+    for (size_t i = 0; i < NUMNODES; i++)
+    {
+        if (msg.incomingNeighbors[i] == 1 && gotIntree[i] == 0)
+        {
+            // Remove the subtree
+            // Queue to remove
+            Queue qTmpRmv(NUMNODES);
+
+            // Visited for remove
+            bool visRmv[NUMNODES] = {false};
+
+            // Modify the intree of the Node
+            msg.intree[i][ID] = 0;
+
+            // Put the remove subtree in Queue
+            qTmpRmv.enqueue(i);
+
+            // Mark the remove node as visited
+            visRmv[i] = true;
+
+            // Remove the subtree
+            while (!qTmpRmv.empty())
+            {
+                // Remove the element from the Queue
+                int v = qTmpRmv.dequeue();
+
+                // Scan through all the nodes in the graph
+                for (int w = 0; w < NUMNODES; w++)
+                {
+                    if (msg.intree[w][v])
+                    {
+                        if (!visRmv[w])
+                        {
+                            visRmv[w] = 1;
+                            msg.intree[w][v] = 0;
+                            qTmpRmv.enqueue(w);
+                        }
+                    }
+                }
+            }
+
+            // Remove it from the Incoming Neighbor
+            msg.incomingNeighbors[i] = 0;
+        }
+        else if (msg.incomingNeighbors[i] == 0 && gotIntree[i] == 1)
+        {
+            // Add it to the incoming Neighbors
+            msg.incomingNeighbors[i] = 1;
+        }
+    }
+
+    // cout << " Node Intree " << ID << endl;
+    // for(int i = 0; i < NUMNODES; i++)
+    // {
+    //     for(int j = 0; j < NUMNODES; j++)
+    //         cout << msg.intree[i][j] << " ";
+    //     cout << endl;
+    // }
 }
 
 void Node::processInputFile()
@@ -730,7 +883,8 @@ int main(int argc, char *argv[])
             node.intreeProtocol();
 
         // Send Data message every 15 seconds
-        //if (i % 15)
+        if (i % 15 == 0)
+            node.dataProtocol();
 
         // Read the Input file and update the received file if neccessary
         node.processInputFile();

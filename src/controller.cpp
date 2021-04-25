@@ -15,6 +15,8 @@
 #include <unistd.h>
 using namespace std;
 
+#define NUMNODES 10
+
 struct FileDescriptor
 {
     // Store the name of the file
@@ -39,10 +41,10 @@ public:
     FileDescriptor *channels;
 
     // Topology Links
-    int topologyLinks[10][10] = {{0}};
+    int topologyLinks[NUMNODES][NUMNODES] = {{0}};
 
     // Counter to check if the node is not responding
-    int nodeNotResponding[10] = {0};
+    int nodeNotResponding[NUMNODES] = {0};
 
     // Create the channels
     void createChannels();
