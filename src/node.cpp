@@ -111,7 +111,20 @@ struct nodeLevel
 
 struct Routing
 {
-    Routing(int dest, string dataMessage) : dest(dest), dataMessage(dataMessage){};
+    Routing(int dest, string dataMessage) : dest(dest), dataMessage(dataMessage){
+        for(size_t i = 0; i < NUMNODES; i++)
+        {
+            incomingNeighbors[NUMNODES] = 0;
+            outgoingNeighbors[NUMNODES] = 0;
+            pathToIncomingNeighbors[NUMNODES] = "";
+
+            for(size_t j = 0; j < NUMNODES; j++)
+            {
+                intree[i][j] = 0;
+                passDataToNeighbor[i][j] = "";
+            }
+        }
+    };
 
     // Destination Node
     int dest;
@@ -123,19 +136,19 @@ struct Routing
     string dataMessage;
 
     // Buffer for passing message to Neighbor
-    string passDataToNeighbor[NUMNODES] = {""};
+    string passDataToNeighbor[NUMNODES][NUMNODES];
 
     // Keep track of Incoming Neighbors
-    int incomingNeighbors[NUMNODES] = {0};
+    int incomingNeighbors[NUMNODES];
 
     // Keep track of Outgoing Neighbors
-    int outgoingNeighbors[NUMNODES] = {0};
+    int outgoingNeighbors[NUMNODES];
 
     // In-tree of a Node
-    int intree[NUMNODES][NUMNODES] = {{0}};
+    int intree[NUMNODES][NUMNODES];
 
     // Store the path to the neighbor
-    string pathToIncomingNeighbors[NUMNODES] = {""};
+    string pathToIncomingNeighbors[NUMNODES];
 
     // Check if incoming Neighbors is empty
     bool isINempty();
@@ -210,7 +223,6 @@ void Routing::removeInTreePath(size_t w, size_t v, int (&tmpIntree)[NUMNODES][NU
 
 void Routing::pruneNode(size_t w, size_t v, int (&tmpIntree)[NUMNODES][NUMNODES])
 {
-    cout << tmpIntree[w][v] << " " << w << " " << v << endl;
     if(!tmpIntree[w][v])
     {
         intree[w][v] = 0;
@@ -691,11 +703,14 @@ void Node::dataProtocol()
     // Pass the Data Message to the Neighbor
     for (size_t i = 0; i < NUMNODES; i++)
     {
-        if (msg.passDataToNeighbor[i] != "")
+        for(size_t j = 0; j < NUMNODES; j++)
         {
-            channel.output << msg.passDataToNeighbor[i] << endl;
-            channel.output.flush();
-            msg.passDataToNeighbor[i] = "";
+            if (msg.passDataToNeighbor[i][j] != "")
+            {
+                channel.output << msg.passDataToNeighbor[i][j] << endl;
+                channel.output.flush();
+                msg.passDataToNeighbor[i][j] = "";
+            }
         }
     }
 
@@ -843,7 +858,7 @@ void Node::computeIntree()
     {
         if (msg.incomingNeighbors[i] == 1 && gotIntree[i] == false)
         {
-            cout << "Node " << ID << ": Node " << i << " got killed." << endl;
+            cout << "Node " << ID << ": oh no! Node " << i << " got killed! Time to adapt my peers!" << endl;
 
             // Modify the intree of the Node
             msg.intree[i][ID] = 0;
@@ -901,6 +916,7 @@ void Node::computeData()
         {
             if (line[11] == 'b')
             {
+                
                 // Extract the data Message
                 string message = line.erase(0, 17);
 
@@ -915,7 +931,6 @@ void Node::computeData()
                 if (intermediateNode == tempCheck)
                 {
                     intermediateNode = "";
-
                     continue;
                 }
 
@@ -935,21 +950,36 @@ void Node::computeData()
                 for (size_t i = 0; i < pathLen; i += 2)
                 {
                     char c = path[i];
-                    if ((c - '0') == msg.dest)
+                    if (c == dataDest)
                     {
                         path.erase(path.begin() + i + 1, path.begin() + pathLen - 1);
                         break;
                     }
                 }
 
-                msg.passDataToNeighbor[dataSrc - '0'] = "Data " + to_string((dataSrc - '0')) + " " + to_string((dataDest - '0')) + " " + path + "begin " + message;
+                for(size_t j = 0; j < NUMNODES; j++)
+                {
+                    if(msg.passDataToNeighbor[dataSrc - '0'][j] == "")
+                    {
+                        msg.passDataToNeighbor[dataSrc - '0'][j] = "Data " + to_string((dataSrc - '0')) + " " + to_string((dataDest - '0')) + " " + path + "begin " + message;
+                        break;
+                    }
+                }
             }
             else
             {
                 // Remove myself from the intermediate nodes
                 line.erase(line.begin() + 9);
                 line.erase(line.begin() + 9);
-                msg.passDataToNeighbor[dataSrc - '0'] = line;
+
+                for(size_t j = 0; j < NUMNODES; j++)
+                {
+                    if(msg.passDataToNeighbor[dataSrc - '0'][j] == "")
+                    {
+                        msg.passDataToNeighbor[dataSrc - '0'][j] = line;
+                        break;
+                    }
+                }
             }
         }
     }

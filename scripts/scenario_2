@@ -1,19 +1,19 @@
 clear
-echo -e "Starting scenario_1 ..."
+echo -e "Starting scenario_2 ..."
 echo -e "\nThis software is written for Academic Purposes only and comes with ABSOLUTELY NO WARRANTY"
-echo -e "Topology file is auto-generated. Kindly, to change topology please do so in the scripts/scenario_1 file\n"
+echo -e "Topology file is auto-generated. Kindly, to change topology please do so in the scripts/scenario_2 file\n"
 rm -rf bin
-rm -rf scenario_1
-mkdir -p scenario_1
+rm -rf scenario_2
+mkdir -p scenario_2
 make
-cd ./scenario_1
+cd ./scenario_2
 touch topology
 
 # CHANGE THE TOPOLOGY HERE
 echo -e "0 1\n1 2\n2 3\n3 0\n0 4\n4 3" > topology
 
 ../bin/controller.out 100 &
-../bin/node.out 0 100 -1 &
+../bin/node.out 0 100 3 "It works!!!" &
 ../bin/node.out 1 100 -1 &
 ../bin/node.out 2 100 -1 &
 ../bin/node.out 3 100 -1 &

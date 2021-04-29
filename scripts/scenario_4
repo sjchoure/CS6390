@@ -1,0 +1,21 @@
+clear
+echo -e "Starting scenario_4 ... [ Node 4 will automatically get killed :) ]"
+echo -e "\nThis software is written for Academic Purposes only and comes with ABSOLUTELY NO WARRANTY"
+echo -e "Topology file is auto-generated. Kindly, to change topology please do so in the scripts/scenario_4 file\n"
+rm -rf bin
+rm -rf scenario_4
+mkdir -p scenario_4
+make
+cd ./scenario_4
+touch topology
+
+# CHANGE THE TOPOLOGY HERE
+echo -e "0 1\n1 2\n2 3\n3 0\n0 4\n4 3" > topology
+
+../bin/controller.out 160 &
+../bin/node.out 0 160 3 "It works!!!" &
+../bin/node.out 1 160 -1 &
+../bin/node.out 2 160 -1 &
+../bin/node.out 3 160 -1 &
+../bin/node.out 4 80 -1 &
+../bin/node.out 5 160 -1 &

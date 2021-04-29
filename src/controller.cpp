@@ -93,6 +93,9 @@ public:
     //Hello Protocol
     void sendToNeighbors();
 
+    // beta function
+    void sendToNeighborsData();
+
 private:
     // Channels of Controller
     FileDescriptor channel;
@@ -196,6 +199,29 @@ void Controller::sendToNeighbors()
     }
 }
 
+void Controller::sendToNeighborsData()
+{
+    // Search through the topology links to find the neighbors
+    for (size_t i = 0; i < nodes.numNodes; i++)
+    {
+        // Read the output file of the node for the hello message
+        string line = "";
+        while((line = readFile(nodes.channels[i].input)) != "")
+        {
+            // Go through all the links of that particular nodes
+            for (size_t j = 0; j < nodes.numNodes; j++)
+            {
+                // If the link exist then put the message of that nodes input file
+                if (nodes.topologyLinks[i][j])
+                {
+                    nodes.channels[j].output << line << endl;
+                    nodes.channels[j].output.flush(); //force
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     //Check number of arguments
@@ -225,7 +251,7 @@ int main(int argc, char *argv[])
         if (i % 10 == 0) 
             controller.sendToNeighbors();
         if (i % 15 == 0) 
-            controller.sendToNeighbors();
+            controller.sendToNeighborsData();
 
         sleep(1);
     }
