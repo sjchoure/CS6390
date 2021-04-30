@@ -246,13 +246,7 @@ int main(int argc, char *argv[])
     // Start the algo
     for (size_t i = 0; i < controller.duration; i++)
     {
-        if (i % 30 == 0) 
-            controller.sendToNeighbors();
-        if (i % 10 == 0) 
-            controller.sendToNeighbors();
-        if (i % 15 == 0) 
-            controller.sendToNeighborsData();
-
+        controller.sendToNeighborsData();
         sleep(1);
     }
     cout << "Controller Done" << endl;

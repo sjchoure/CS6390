@@ -111,14 +111,14 @@ struct nodeLevel
 
 struct Routing
 {
-    Routing(int dest, string dataMessage) : dest(dest), dataMessage(dataMessage){
-        for(size_t i = 0; i < NUMNODES; i++)
+    Routing(int dest, string dataMessage) : dest(dest), dataMessage(dataMessage)
+    {
+        for (size_t i = 0; i < NUMNODES; i++)
         {
             incomingNeighbors[NUMNODES] = 0;
-            outgoingNeighbors[NUMNODES] = 0;
             pathToIncomingNeighbors[NUMNODES] = "";
 
-            for(size_t j = 0; j < NUMNODES; j++)
+            for (size_t j = 0; j < NUMNODES; j++)
             {
                 intree[i][j] = 0;
                 passDataToNeighbor[i][j] = "";
@@ -141,9 +141,6 @@ struct Routing
     // Keep track of Incoming Neighbors
     int incomingNeighbors[NUMNODES];
 
-    // Keep track of Outgoing Neighbors
-    int outgoingNeighbors[NUMNODES];
-
     // In-tree of a Node
     int intree[NUMNODES][NUMNODES];
 
@@ -161,7 +158,7 @@ struct Routing
 
     // Common Function
     void extendedBFSt(size_t, size_t, int (&)[NUMNODES][NUMNODES], void (Routing::*func)(size_t, size_t, int (&)[NUMNODES][NUMNODES]));
-    
+
     void extendedBFSt(size_t, size_t, int (&)[NUMNODES][NUMNODES], nodeLevel (&)[NUMNODES], void (Routing::*func)(size_t, size_t, int (&)[NUMNODES][NUMNODES], nodeLevel (&)[NUMNODES]));
 
     // Common Function
@@ -223,7 +220,7 @@ void Routing::removeInTreePath(size_t w, size_t v, int (&tmpIntree)[NUMNODES][NU
 
 void Routing::pruneNode(size_t w, size_t v, int (&tmpIntree)[NUMNODES][NUMNODES])
 {
-    if(!tmpIntree[w][v])
+    if (!tmpIntree[w][v])
     {
         intree[w][v] = 0;
     }
@@ -280,7 +277,7 @@ void Routing::extendedBFSt(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES
 
 void Routing::extendedBFSt(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODES], nodeLevel (&levels)[NUMNODES], void (Routing::*func)(size_t, size_t, int (&)[NUMNODES][NUMNODES], nodeLevel (&)[NUMNODES]))
 {
-     // Mark the levels as zero
+    // Mark the levels as zero
     levels[ID].level = 0;
     levels[ID].dest = -1;
 
@@ -550,6 +547,9 @@ public:
     void processInputFile();
 
 private:
+    // Keep record of who sent the intree message
+    bool gotIntree[NUMNODES] = {0};
+
     // Channels of the Node
     FileDescriptor channel;
 
@@ -566,13 +566,13 @@ private:
     void findPathToDest(int, string &);
 
     // Compute the Hello Messages
-    void computeHello();
+    void computeHello(string &);
 
     // Compute the intree Messages
-    void computeIntree();
+    void computeIntree(string &);
 
     // Compute the Data Messages
-    void computeData();
+    void computeData(string &);
 };
 
 Node::~Node()
@@ -622,7 +622,7 @@ string Node::readFile(fstream &fd)
         fd.clear();
         line = "";
     }
-    
+
     return line;
 }
 
@@ -700,19 +700,6 @@ void Node::findPathToDest(int v, string &path)
 
 void Node::dataProtocol()
 {
-    // Pass the Data Message to the Neighbor
-    for (size_t i = 0; i < NUMNODES; i++)
-    {
-        for(size_t j = 0; j < NUMNODES; j++)
-        {
-            if (msg.passDataToNeighbor[i][j] != "")
-            {
-                channel.output << msg.passDataToNeighbor[i][j] << endl;
-                channel.output.flush();
-                msg.passDataToNeighbor[i][j] = "";
-            }
-        }
-    }
 
     if (msg.dest != -1)
     {
@@ -761,224 +748,154 @@ void Node::dataProtocol()
     }
 }
 
-void Node::computeHello()
+void Node::computeHello(string &line)
 {
     // Read the Input file to check for the message
     // and then update the incoming neighbors
-    string line;
-    streampos oldpos;
-    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
-    {
-        // Check if the line read is a Hello Message or not, if not then put the line back to the file and break.
-        if (line[0] != 'H')
-        {
-            channel.input.seekg(oldpos);
-            break;
-        }
 
-        //Store the node number in char form
-        char c = line[6];
+    //Store the node number in char form
+    char c = line[6];
 
-        // Update the Incoming Neighbors
-        msg.incomingNeighbors[c - '0'] = 1;
-    }
+    // Update the Incoming Neighbors
+    msg.incomingNeighbors[c - '0'] = 1;
 }
 
-void Node::computeIntree()
+void Node::computeIntree(string &line)
 {
-    // Keep record of who sent the intree message
-    bool gotIntree[NUMNODES] = {0};
 
     // Read the input file
     // Update the Intree Graph
-    string line;
-    streampos oldpos;
-    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
+
+    // Make the Intree Graph with the help of the Intree message and Incoming neighbors
+    // Parse the Intree Message
+    // Calculate the total length of the message
+    size_t len = line.length();
+
+    // Find who sent this message
+    char c = line[7];
+    // Let's convert it to int;
+    int rootedAt = c - '0';
+    // Store in the who sent Intree
+    gotIntree[rootedAt] = true;
+
+    // Calculate the length of body part of the message
+    size_t body;
+    if (len == 8)
     {
-        // Check if the line read is an Intree Message or not, if not then put the line back to the file and break.
-        if (line[0] != 'I')
-        {
-            channel.input.seekg(oldpos);
-            break;
-        }
+        // No body to calculate
+        body = 0;
+    }
+    else
+    {
+        // Size of the header plus extra the space, starts from '(' and ends at ')'
+        body = len - 9;
+    }
 
-        // Make the Intree Graph with the help of the Intree message and Incoming neighbors
-        // Parse the Intree Message
-        // Calculate the total length of the message
-        size_t len = line.length();
+    // Create a temporary Intree Graph of the received Intree message
+    int tmpIntree[NUMNODES][NUMNODES] = {{0}};
 
-        // Find who sent this message
-        char c = line[7];
-        // Let's convert it to int;
-        int rootedAt = c - '0';
-        // Store in the who sent Intree
-        gotIntree[rootedAt] = true;
+    // Extract the node numbers from the message
+    for (size_t i = 0; i < body; i += 5)
+    {
+        char r = line[10 + i];
+        char c = line[10 + i + 2];
 
-        // Calculate the length of body part of the message
-        size_t body;
-        if (len == 8)
-        {
-            // No body to calculate
-            body = 0;
-        }
-        else
-        {
-            // Size of the header plus extra the space, starts from '(' and ends at ')'
-            body = len - 9;
-        }
+        // Place a directed edge here
+        tmpIntree[r - '0'][c - '0'] = 1;
+    }
 
-        // Create a temporary Intree Graph of the received Intree message
-        int tmpIntree[NUMNODES][NUMNODES] = {{0}};
-
-        // Extract the node numbers from the message
-        for (size_t i = 0; i < body; i += 5)
-        {
-            char r = line[10 + i];
-            char c = line[10 + i + 2];
-
-            // Place a directed edge here
-            tmpIntree[r - '0'][c - '0'] = 1;
-        }
-
-        //Refresh the Contents in Path To Incoming Neighbor
+    //Refresh the Contents in Path To Incoming Neighbor
+    msg.pathToIncomingNeighbors[rootedAt] = "";
+    // Find the path to the Incoming Neighbor
+    msg.storePathToIncomingNeighbor(ID, rootedAt, tmpIntree);
+    // Check if string was empty or not
+    string tmpCheck = to_string(ID) + " ";
+    if (msg.pathToIncomingNeighbors[rootedAt] == tmpCheck)
         msg.pathToIncomingNeighbors[rootedAt] = "";
-        // Find the path to the Incoming Neighbor
-        msg.storePathToIncomingNeighbor(ID, rootedAt, tmpIntree);
-        // Check if string was empty or not
-        string tmpCheck = to_string(ID) + " ";
-        if (msg.pathToIncomingNeighbors[rootedAt] == tmpCheck)
-            msg.pathToIncomingNeighbors[rootedAt] = "";
 
-        // Merge the two trees
-        msg.buildSPT(ID, rootedAt, tmpIntree);
-    }
-
-    // Keep with the neighbors who sent the Intree
-    for (size_t i = 0; i < NUMNODES; i++)
-    {
-        if (msg.incomingNeighbors[i] == 1 && gotIntree[i] == false)
-        {
-            cout << "Node " << ID << ": oh no! Node " << i << " got killed! Time to adapt my peers!" << endl;
-
-            // Modify the intree of the Node
-            msg.intree[i][ID] = 0;
-
-            // Remove the subtree
-            msg.extendedBFSi(ID, i, msg.intree, &Routing::removeInTreePath);
-            
-            // Remove it from the Incoming Neighbor
-            msg.incomingNeighbors[i] = 0;
-        }
-        else if (msg.incomingNeighbors[i] == 0 && gotIntree[i] == true)
-        {
-            // Add it to the incoming Neighbors
-            msg.incomingNeighbors[i] = 1;
-        }
-    }
+    // Merge the two trees
+    msg.buildSPT(ID, rootedAt, tmpIntree);
 }
 
-void Node::computeData()
+void Node::computeData(string &line)
 {
     // Parse the input file
-    string line;
-    streampos oldpos;
-    while (oldpos = channel.input.tellg(), (line = readFile(channel.input)) != "")
+
+    // Extract the Intermediate node
+    char dataInterDest = line[9];
+
+    // Check if it is destined to me
+    if (unsigned(dataInterDest - '0') != ID)
+        return;
+
+    // Extract the Destination Node
+    char dataDest = line[7];
+
+    // Extract the Source Node
+    char dataSrc = line[5];
+
+    if (unsigned(dataDest - '0') == ID)
     {
-        // Check if the line read is a Data Message or not, if not then put the line back to the file and break.
-        if (line[0] != 'D')
+        // Extract the data Message
+        string message = line.erase(0, 17);
+
+        // Add the data to the received file
+        channel.receivedData << "Message from " << dataSrc << " to " << dataDest << " : " << message << endl;
+    }
+    else
+    {
+        if (line[11] == 'b')
         {
-            channel.input.seekg(oldpos);
-            break;
-        }
 
-        // Extract the Intermediate node
-        char dataInterDest = line[9];
-
-        // Check if it is destined to me
-        if (unsigned(dataInterDest - '0') != ID)
-            continue;
-
-        // Extract the Destination Node
-        char dataDest = line[7];
-
-        // Extract the Source Node
-        char dataSrc = line[5];
-
-        if (unsigned(dataDest - '0') == ID)
-        {
             // Extract the data Message
             string message = line.erase(0, 17);
 
-            // Add the data to the received file
-            channel.receivedData << "Message from " << dataSrc << " to " << dataDest << " : " << message << endl;
+            //Pass to Neighbor
+            string intermediateNode = "";
+
+            // Find the new path
+            findPathToDest((dataDest - '0'), intermediateNode);
+
+            // Check if string was empty or not
+            string tempCheck = dataDest + " ";
+            if (intermediateNode == tempCheck)
+            {
+                intermediateNode = "";
+                return;
+            }
+
+            // Find the Incoming Neighbor
+            size_t len = intermediateNode.length();
+            char in = intermediateNode[len - 4];
+
+            if (msg.pathToIncomingNeighbors[in - '0'] == "")
+                return;
+
+            string path = msg.pathToIncomingNeighbors[in - '0'];
+
+            path.erase(0, 2);
+
+            for (size_t j = 0; j < NUMNODES; j++)
+            {
+                if (msg.passDataToNeighbor[dataSrc - '0'][j] == "")
+                {
+                    msg.passDataToNeighbor[dataSrc - '0'][j] = "Data " + to_string((dataSrc - '0')) + " " + to_string((dataDest - '0')) + " " + path + "begin " + message;
+                    break;
+                }
+            }
         }
         else
         {
-            if (line[11] == 'b')
+            // Remove myself from the intermediate nodes
+            line.erase(line.begin() + 9);
+            line.erase(line.begin() + 9);
+
+            for (size_t j = 0; j < NUMNODES; j++)
             {
-                
-                // Extract the data Message
-                string message = line.erase(0, 17);
-
-                //Pass to Neighbor
-                string intermediateNode = "";
-
-                // Find the new path
-                findPathToDest((dataDest - '0'), intermediateNode);
-
-                // Check if string was empty or not
-                string tempCheck = dataDest + " ";
-                if (intermediateNode == tempCheck)
+                if (msg.passDataToNeighbor[dataSrc - '0'][j] == "")
                 {
-                    intermediateNode = "";
-                    continue;
-                }
-
-                // Find the Incoming Neighbor
-                size_t len = intermediateNode.length();
-                char in = intermediateNode[len - 4];
-
-                if (msg.pathToIncomingNeighbors[in - '0'] == "")
-                    continue;
-
-                string path = msg.pathToIncomingNeighbors[in - '0'];
-
-                path.erase(0, 2);
-
-                size_t pathLen = path.length();
-
-                for (size_t i = 0; i < pathLen; i += 2)
-                {
-                    char c = path[i];
-                    if (c == dataDest)
-                    {
-                        path.erase(path.begin() + i + 1, path.begin() + pathLen - 1);
-                        break;
-                    }
-                }
-
-                for(size_t j = 0; j < NUMNODES; j++)
-                {
-                    if(msg.passDataToNeighbor[dataSrc - '0'][j] == "")
-                    {
-                        msg.passDataToNeighbor[dataSrc - '0'][j] = "Data " + to_string((dataSrc - '0')) + " " + to_string((dataDest - '0')) + " " + path + "begin " + message;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                // Remove myself from the intermediate nodes
-                line.erase(line.begin() + 9);
-                line.erase(line.begin() + 9);
-
-                for(size_t j = 0; j < NUMNODES; j++)
-                {
-                    if(msg.passDataToNeighbor[dataSrc - '0'][j] == "")
-                    {
-                        msg.passDataToNeighbor[dataSrc - '0'][j] = line;
-                        break;
-                    }
+                    msg.passDataToNeighbor[dataSrc - '0'][j] = line;
+                    break;
                 }
             }
         }
@@ -987,29 +904,65 @@ void Node::computeData()
 
 void Node::processInputFile()
 {
-    // Read the message after 2 second delay, to avoid race condition. The Controller is also delayed by 1 second
-    // Counter to check when it is time to expect input
     static size_t timer = 0;
-
-    if (timer >= 1)
+    string line = "";
+    while ((line = readFile(channel.input)) != "")
     {
         // Check for Hello Message
-        if ((timer - 1) % 30 == 0)
-        {
-            computeHello();
-        }
+        if (line[0] == 'H')
+            computeHello(line);
 
         // Check for Intree Message
-        if ((timer - 1) % 10 == 0)
-        {
-            computeIntree();
-        }
+        if (line[0] == 'I')
+            computeIntree(line);
 
-        if ((timer - 1) % 15 == 0)
+        if (line[0] == 'D')
+            computeData(line);
+    }
+
+    if (timer > 0 && ((timer - 2) % 10) == 0)
+    {
+        cout << " Node " << ID << ": Checking at " << timer << endl;
+        // Keep with the neighbors who sent the Intree
+        for (size_t i = 0; i < NUMNODES; i++)
         {
-            computeData();
+            if (msg.incomingNeighbors[i] == 1 && gotIntree[i] == false)
+            {
+                cout << "Node " << ID << ": oh no! Node " << i << " got killed! Time to adapt my peers!" << endl;
+
+                // Modify the intree of the Node
+                msg.intree[i][ID] = 0;
+
+                // Remove the subtree
+                msg.extendedBFSi(ID, i, msg.intree, &Routing::removeInTreePath);
+
+                // Remove it from the Incoming Neighbor
+                msg.incomingNeighbors[i] = 0;
+            }
+            else if (msg.incomingNeighbors[i] == 0 && gotIntree[i] == true)
+            {
+                // Add it to the incoming Neighbors
+                msg.incomingNeighbors[i] = 1;
+            }
+
+            gotIntree[i] = false;
         }
     }
+
+    // Pass the Data Message to the Neighbor
+    for (size_t i = 0; i < NUMNODES; i++)
+    {
+        for (size_t j = 0; j < NUMNODES; j++)
+        {
+            if (msg.passDataToNeighbor[i][j] != "")
+            {
+                channel.output << msg.passDataToNeighbor[i][j] << endl;
+                channel.output.flush();
+                msg.passDataToNeighbor[i][j] = "";
+            }
+        }
+    }
+
     timer++;
 }
 
