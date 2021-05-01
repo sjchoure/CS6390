@@ -115,12 +115,13 @@ struct Routing
     {
         for (size_t i = 0; i < NUMNODES; i++)
         {
-            incomingNeighbors[NUMNODES] = 0;
-            pathToIncomingNeighbors[NUMNODES] = "";
+            incomingNeighbors[i] = 0;
+            pathToIncomingNeighbors[i] = "";
 
             for (size_t j = 0; j < NUMNODES; j++)
             {
                 intree[i][j] = 0;
+                prevIntree[i][j] = 0;
                 passDataToNeighbor[i][j] = "";
             }
         }
@@ -143,6 +144,12 @@ struct Routing
 
     // In-tree of a Node
     int intree[NUMNODES][NUMNODES];
+
+    // Previous In-tree of a Node
+    int prevIntree[NUMNODES][NUMNODES];
+
+    // Check if the Intree changed
+    bool sendIntreeNow = false;
 
     // Store the path to the neighbor
     string pathToIncomingNeighbors[NUMNODES];
@@ -393,6 +400,15 @@ void Routing::extendedBFSi(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES
 
 void Routing::buildSPT(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NUMNODES])
 {
+    // Store the Previous Intree
+    for(size_t i = 0; i < NUMNODES; i++)
+    {
+        for(size_t j = 0; j < NUMNODES; j++)
+        {
+            prevIntree[i][j] = intree[i][j];
+        }
+    }
+
     // Modify the intree of the incoming neighbor
     for (size_t i = 0; i < NUMNODES; i++)
     {
@@ -517,6 +533,18 @@ void Routing::buildSPT(size_t ID, size_t rootedAt, int (&tmpIntree)[NUMNODES][NU
     for (size_t i = 0; i < NUMNODES; i++)
         for (size_t j = 0; j < NUMNODES; j++)
             intree[i][j] = mergeTree[i][j];
+
+    // Check if the intree changed to push it immediately
+    for(size_t i = 0; i < NUMNODES; i++)
+    {
+        for(size_t j = 0; j < NUMNODES; j++)
+        {
+            if(prevIntree[i][j] != intree[i][j])
+            {
+                sendIntreeNow = true;
+            }
+        }
+    }
 }
 
 class Node
@@ -700,7 +728,6 @@ void Node::findPathToDest(int v, string &path)
 
 void Node::dataProtocol()
 {
-
     if (msg.dest != -1)
     {
         // Clear the old path
@@ -729,18 +756,6 @@ void Node::dataProtocol()
         string path = msg.pathToIncomingNeighbors[in - '0'];
 
         path.erase(0, 2);
-
-        size_t pathLen = path.length();
-
-        for (size_t i = 0; i < pathLen; i += 2)
-        {
-            char c = path[i];
-            if ((c - '0') == msg.dest)
-            {
-                path.erase(path.begin() + i + 1, path.begin() + pathLen - 1);
-                break;
-            }
-        }
 
         // Send the data to the Incoming Neighbor
         channel.output << "Data " << ID << " " << msg.dest << " " << path << "begin " << msg.dataMessage << endl;
@@ -834,7 +849,7 @@ void Node::computeData(string &line)
     // Extract the Source Node
     char dataSrc = line[5];
 
-    if (unsigned(dataDest - '0') == ID)
+    if (unsigned(dataDest - '0') == ID && line[11] == 'b')
     {
         // Extract the data Message
         string message = line.erase(0, 17);
@@ -947,6 +962,13 @@ void Node::processInputFile()
 
             gotIntree[i] = false;
         }
+    }
+
+    // Push the In-tree Immediately
+    if(msg.sendIntreeNow)
+    {
+        intreeProtocol();
+        msg.sendIntreeNow = false;
     }
 
     // Pass the Data Message to the Neighbor

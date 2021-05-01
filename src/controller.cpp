@@ -90,9 +90,6 @@ public:
     // Duration
     size_t duration;
 
-    //Hello Protocol
-    void sendToNeighbors();
-
     // beta function
     void sendToNeighborsData();
 
@@ -172,31 +169,6 @@ string Controller::readFile(fstream &fd)
     }
     
     return line;
-}
-
-void Controller::sendToNeighbors()
-{
-    // Search through the topology links to find the neighbors
-    for (size_t i = 0; i < nodes.numNodes; i++)
-    {
-        // Read the output file of the node for the hello message
-        string line = readFile(nodes.channels[i].input);
-
-        // If the read is empty don't transmit
-        if (line != "")
-        {
-            // Go through all the links of that particular nodes
-            for (size_t j = 0; j < nodes.numNodes; j++)
-            {
-                // If the link exist then put the message of that nodes input file
-                if (nodes.topologyLinks[i][j])
-                {
-                    nodes.channels[j].output << line << endl;
-                    nodes.channels[j].output.flush(); //force
-                }
-            }
-        }
-    }
 }
 
 void Controller::sendToNeighborsData()
