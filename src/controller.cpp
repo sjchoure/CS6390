@@ -8,11 +8,15 @@
  *  To make it FOSS Compliant, this software is free to use.
  */
 
+// STL
 #include <iostream>
 #include <fstream>
+// SL
 #include <cstdlib>
 #include <cstring>
+// Unix
 #include <unistd.h>
+
 using namespace std;
 
 #define NUMNODES 10

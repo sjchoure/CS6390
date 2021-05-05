@@ -8,10 +8,13 @@
  *  To make it FOSS Compliant, this software is free to use.
  */
 
+// STL
 #include <iostream>
 #include <fstream>
 #include <string>
+// SL
 #include <cstdlib>
+// Unix
 #include <unistd.h>
 
 using namespace std;
@@ -728,6 +731,7 @@ void Node::findPathToDest(int v, string &path)
 
 void Node::dataProtocol()
 {
+    // Send the Data Message if the destination is not -1
     if (msg.dest != -1)
     {
         // Clear the old path
@@ -780,7 +784,6 @@ void Node::computeIntree(string &line)
 
     // Read the input file
     // Update the Intree Graph
-
     // Make the Intree Graph with the help of the Intree message and Incoming neighbors
     // Parse the Intree Message
     // Calculate the total length of the message
@@ -835,7 +838,6 @@ void Node::computeIntree(string &line)
 void Node::computeData(string &line)
 {
     // Parse the input file
-
     // Extract the Intermediate node
     char dataInterDest = line[9];
 
@@ -931,13 +933,13 @@ void Node::processInputFile()
         if (line[0] == 'I')
             computeIntree(line);
 
+        // Check for Data Message
         if (line[0] == 'D')
             computeData(line);
     }
 
     if (timer > 0 && ((timer - 2) % 10) == 0)
     {
-        cout << " Node " << ID << ": Checking at " << timer << endl;
         // Keep with the neighbors who sent the Intree
         for (size_t i = 0; i < NUMNODES; i++)
         {
@@ -953,6 +955,9 @@ void Node::processInputFile()
 
                 // Remove it from the Incoming Neighbor
                 msg.incomingNeighbors[i] = 0;
+
+                // Push the intree message Immediately
+                msg.sendIntreeNow = true;
             }
             else if (msg.incomingNeighbors[i] == 0 && gotIntree[i] == true)
             {
